@@ -22,7 +22,7 @@ var twit = new twitter({
 
 twit.stream('statuses/filter', {track:'ufc'}, function(stream) {
     stream.on('data', function (tweet) {
-        console.log(tweet);
+        //console.log(tweet);
     });
 });
 
