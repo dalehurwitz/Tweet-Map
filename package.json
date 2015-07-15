@@ -1,9 +1,11 @@
 {
   "name": "Tweet-Map",
   "version": "0.1.0",
-  "description": "",
+  "description": "Tweets on a world map",
   "main": "app.js",
   "dependencies": {
+    "asynquence": "^0.6.0-b",
+    "asynquence-contrib": "^0.10.1-a",
     "google-locations": "^0.1.2",
     "socket.io": "^0.9.16",
     "twitter": "^1.2.5"

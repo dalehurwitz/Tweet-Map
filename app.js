@@ -6,13 +6,34 @@ var http_serv = http.createServer(handleHTTP).listen(port, host);
 var fs = require("fs");
 var io = require("socket.io").listen(http_serv);
 var twitter = require("twitter");
+var ASQ = require("asynquence");
+require("asynquence-contrib");
 
 var GoogleLocations = require('google-locations');
 var locations = new GoogleLocations('AIzaSyBlGLYy8NRJcU_oPUseU6PDy4GT3S_2bCI');
 
-locations.autocomplete({input: 'Verm'}, function(err, response) {
-	console.log("autocomplete: ", response.predictions);
-});
+function getLocationOfTweet(location) {
+    getAutocompleteResult(location)
+        .then(getResultCoords)
+        .val(function(result) {
+            console.log(result);
+        })
+        .or(function(err) {
+            console.log("Error: " + err);
+        });
+}
+
+function getAutocompleteResult(input) {
+    var sq = ASQ();
+    locations.autocomplete({input: input}, sq.errfcb());
+    return sq;
+}
+
+function getResultCoords(done, result) {
+    return locations.details({placeid: result.predictions[0].place_id}, function(err, data) {
+        done(data.result.geometry.location);
+    });
+}
 
 io.on("connection", handleIO);
 io.configure(function(){
@@ -30,9 +51,9 @@ var twit = new twitter({
 var num = 0;
 twit.stream('statuses/filter', {track:'GrowingUpMexican'}, function(stream) {
 	stream.on('data', function (tweet) {
-		if(typeof tweet.user !== "undefined" && tweet.user.location && num < 5) {
+		if(typeof tweet.user !== "undefined" && tweet.user.location && num < 10) {
 			num ++;
-			console.log(tweet.user.location);
+            getLocationOfTweet(tweet.user.location);
 		}
 	});
 });
