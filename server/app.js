@@ -12,7 +12,7 @@ require("asynquence-contrib");
 var config = require("./config");
 
 var node_static = require("node-static");
-var static_files = new node_static.Server("./client");
+var static_files = new node_static.Server("../client");
 
 var GoogleLocations = require('google-locations');
 var locations = new GoogleLocations(config.google.key);
@@ -71,13 +71,11 @@ twit.stream('statuses/filter', {
 
 function handleHTTP(req, res) {
     if (req.method === "GET") {
-		console.log(req.url);
 		if(req.url === "/") {
 			req.url = "/index.html";
 			static_files.serve(req, res);
 		} 
-		else if(req.url === "/main.js") {
-			req.url = "/main.js";
+		else if(req.url === "/main.js" || req.url === "/main.css") {
 			static_files.serve(req, res);
 		}  
 		else {
