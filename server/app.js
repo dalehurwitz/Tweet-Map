@@ -11,6 +11,9 @@ require("asynquence-contrib");
 
 var config = require("./config");
 
+var node_static = require("node-static");
+var static_files = new node_static.Server("./client");
+
 var GoogleLocations = require('google-locations');
 var locations = new GoogleLocations(config.google.key);
 
@@ -61,21 +64,31 @@ twit.stream('statuses/filter', {
     stream.on('data', function (tweet) {
         if (typeof tweet.user !== "undefined" && tweet.user.location && num < 10) {
             num++;
-            getLocationOfTweet(tweet.user.location);
+            //getLocationOfTweet(tweet.user.location);
         }
     });
 });
 
 function handleHTTP(req, res) {
-    fs.readFile(__dirname + "/index.html",
-        function (err, data) {
-            if (err) {
-                res.writeHead(500);
-                return res.end("Error loading index.html");
-            }
-            res.writeHead(200);
-            res.end(data);
-        });
+    if (req.method === "GET") {
+		console.log(req.url);
+		if(req.url === "/") {
+			req.url = "/index.html";
+			static_files.serve(req, res);
+		} 
+		else if(req.url === "/main.js") {
+			req.url = "/main.js";
+			static_files.serve(req, res);
+		}  
+		else {
+			res.writeHead(404);
+			res.end("Cannot retrieve file:" + req.url);
+		}
+	} 
+	else {
+		res.writeHead(403);
+		res.end("Get outta here!");
+	}
 }
 
 function handleIO(socket) {
