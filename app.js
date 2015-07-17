@@ -9,8 +9,10 @@ var twitter = require("twitter");
 var ASQ = require("asynquence");
 require("asynquence-contrib");
 
+var config = require("./config");
+
 var GoogleLocations = require('google-locations');
-var locations = new GoogleLocations('AIzaSyBlGLYy8NRJcU_oPUseU6PDy4GT3S_2bCI');
+var locations = new GoogleLocations(config.google.key);
 
 function getLocationOfTweet(location) {
     getAutocompleteResult(location)
@@ -46,15 +48,15 @@ io.configure(function () {
 });
 
 var twit = new twitter({
-    consumer_key: 'SKKs1PSexqKHddYG5VAoz1Ekk',
-    consumer_secret: 'VtPwqBZ2LFRH0yMxDIy6RzN5bAwFmSf3lsDeM95xO1nb0Rru53',
-    access_token_key: '121646999-5XGNK3X5cwqiLocBEvCwKIkkvGtxRADnmWNPxTbX',
-    access_token_secret: '9NVtIIu4yPbLek7YQkRhOTLoP69rEvGJ7uA9PqKZdIPNp'
+    consumer_key: config.twitter.ck,
+    consumer_secret: config.twitter.cs,
+    access_token_key: config.twitter.ak,
+    access_token_secret: config.twitter.as
 });
 
 var num = 0;
 twit.stream('statuses/filter', {
-    track: 'GrowingUpMexican'
+    track: 'ufc'
 }, function (stream) {
     stream.on('data', function (tweet) {
         if (typeof tweet.user !== "undefined" && tweet.user.location && num < 10) {
