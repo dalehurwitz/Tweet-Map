@@ -8,7 +8,7 @@
 	});
     
     function init() {
-        initMap(-11.6015625, 18.646245142670608, 3);
+        initMap(5.8015625, 18.546245142670608, 3);
         initSocketIO();
     }
     
@@ -27,17 +27,12 @@
     
     /*** Init OpenLayers map ***/
     function initMap(lng, lat, zoom) {
-        map = new ol.Map({
-            target: 'map',
-            layers: [
-                new ol.layer.Tile({
-                    source: new ol.source.MapQuest({layer: 'osm'})
-                })
-            ],
-            view: new ol.View({
-                center: ol.proj.transform([lng, lat], 'EPSG:4326', 'EPSG:3857'),
-                zoom: zoom
-            })
-        });
+        map = L.map('map').setView([lng, lat], 3);
+        L.tileLayer('http://api.tiles.mapbox.com/v4/mapbox.outdoors/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoiZGF6ODkiLCJhIjoiNzE4ZDViY2M0NWEwYjIxZWQxOGIwM2U5YzUwYmJkYTEifQ.Tr84K9p5dN8qhQ8Y6KkWoA', {
+            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+            maxZoom: 18,
+            id: 'your.mapbox.project.id',
+            accessToken: 'your.mapbox.public.access.token'
+        }).addTo(map);
     }
 })();
