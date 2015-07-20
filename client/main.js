@@ -8,7 +8,7 @@
 	});
     
     function init() {
-        initMap(5.8015625, 18.546245142670608, 3);
+        initMap(38.272689, 9.552734, 3);
         initSocketIO();
     }
     
@@ -26,8 +26,8 @@
     }
     
     /*** Init OpenLayers map ***/
-    function initMap(lng, lat, zoom) {
-        map = L.map('map').setView([lng, lat], 3);
+    function initMap(lat, lng, zoom) {
+        map = L.map('map').setView([lat, lng], 3);
         L.tileLayer('http://api.tiles.mapbox.com/v4/mapbox.outdoors/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoiZGF6ODkiLCJhIjoiNzE4ZDViY2M0NWEwYjIxZWQxOGIwM2U5YzUwYmJkYTEifQ.Tr84K9p5dN8qhQ8Y6KkWoA', {
             attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
             maxZoom: 18,
