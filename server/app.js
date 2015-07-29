@@ -18,6 +18,9 @@ var GoogleLocations = require('google-locations');
 var locations = new GoogleLocations(config.google.key);
 
 var numClientsConnected = 0;
+var curStream = null;
+
+var keywords = "tom brady";
 
 /*** socket.io configuration ***/
 io.on("connection", handleIO);
@@ -35,20 +38,26 @@ var twit = new twitter({
 	access_token_secret: config.twitter.as
 });
 
-startTwitterStream("tom brady");
-
 function startTwitterStream(keywords) {
+	console.log("* start stream");
 	var num = 0;
 	twit.stream('statuses/filter', {
 		track: keywords
 	}, function (stream) {
-		stream.on('data', function (tweet) {
+		curStream = stream;
+		curStream.on('data', function (tweet) {
 			if (typeof tweet.user !== "undefined" && tweet) {
 				num++;
 				getLocationOfTweet(tweet);
 			}
 		});
 	});
+}
+
+function destroyTwitterStream() {
+	console.log("* destroy stream");
+	curStream.destroy();
+	curStream = null;
 }
 
 /* 
@@ -80,7 +89,7 @@ function getGoogleAutocompleteResult(tweet) {
  *  Get the coordinates of the first result in a list of possible addresses
  */
 function getResultCoords(done, result) {
-	if(typeof result.predictions[0] === "undefined") {
+	if(typeof result.predictions[0] === "undefined" || numClientsConnected === 0) {
 		console.log("No results available: " + result.status);
 		done.abort();
 		return;
@@ -116,10 +125,16 @@ function handleIO(socket) {
 	numClientsConnected++;
 	console.log("connected");
 	console.log("Num clients: " + numClientsConnected);
-
+	if(curStream === null) {
+		startTwitterStream(keywords);
+	}
+	
 	socket.on("disconnect", function () {
 		numClientsConnected--;
 		console.log("disconnected");
 		console.log("Num clients: " + numClientsConnected);
+		if(numClientsConnected === 0) {
+			destroyTwitterStream();
+		}
 	});
 }
