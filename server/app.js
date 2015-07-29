@@ -35,7 +35,7 @@ var twit = new twitter({
 	access_token_secret: config.twitter.as
 });
 
-startTwitterStream("#lhhatl");
+startTwitterStream("tom brady");
 
 function startTwitterStream(keywords) {
 	var num = 0;
@@ -43,7 +43,7 @@ function startTwitterStream(keywords) {
 		track: keywords
 	}, function (stream) {
 		stream.on('data', function (tweet) {
-			if (typeof tweet.user !== "undefined" && tweet && num < 20) {
+			if (typeof tweet.user !== "undefined" && tweet) {
 				num++;
 				getLocationOfTweet(tweet);
 			}
@@ -98,7 +98,7 @@ function handleHTTP(req, res) {
 			req.url = "/index.html";
 			static_files.serve(req, res);
 		} 
-		else if(req.url === "/main.js" || req.url === "/main.css" || req.url.split('/')[1] === "images") {
+		else if(req.url === "/main.js" || req.url === "/main.css" || req.url.split('/')[1] === "images" || req.url.split('/')[1] === "vendor") {
 			static_files.serve(req, res);
 		}  
 		else {
