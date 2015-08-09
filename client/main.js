@@ -33,6 +33,10 @@
 		socket.on("newtweet", function(tweet, coords) {
 			addTweetMarkerToMap(tweet, coords);
 		});
+        
+        socket.on("client-registered", function(index) {
+            console.log("index: " + index);
+        })
 	}
 
 	/*** Init OpenLayers map ***/

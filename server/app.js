@@ -17,10 +17,11 @@ var static_files = new node_static.Server("../client");
 var GoogleLocations = require('google-locations');
 var locations = new GoogleLocations(config.google.key);
 
+var clients = [];
 var numClientsConnected = 0;
 var curStream = null;
 
-var keywords = "tom brady";
+var keywords = "bernie";
 
 /*** socket.io configuration ***/
 io.on("connection", handleIO);
@@ -46,12 +47,21 @@ function startTwitterStream(keywords) {
 	}, function (stream) {
 		curStream = stream;
 		curStream.on('data', function (tweet) {
+            //console.log("new tweet")
 			if (typeof tweet.user !== "undefined" && tweet) {
 				num++;
-				getLocationOfTweet(tweet);
+				//getLocationOfTweet(tweet);
 			}
 		});
 	});
+}
+
+function createTwitterStream(keywords) {
+    return ASQ(function(done) {
+        twit.stream('statuses/filter', { track: keywords }, function(stream) {
+            done(stream);
+        });
+    });
 }
 
 function destroyTwitterStream() {
@@ -125,6 +135,7 @@ function handleIO(socket) {
 	numClientsConnected++;
 	console.log("connected");
 	console.log("Num clients: " + numClientsConnected);
+    addClient(socket.id);
 	if(curStream === null) {
 		startTwitterStream(keywords);
 	}
@@ -133,8 +144,30 @@ function handleIO(socket) {
 		numClientsConnected--;
 		console.log("disconnected");
 		console.log("Num clients: " + numClientsConnected);
+        destroyClient(socket.id);
 		if(numClientsConnected === 0) {
 			destroyTwitterStream();
 		}
 	});
+}
+
+function addClient(id) {
+    clients.push({ id: id, stream: null });
+    //Send the client it's client ID
+    io.sockets.socket(id).emit("client-registered", clients.length-1);
+    
+//    createTwitterStream(keywords)
+//        .val(function(stream) {
+//            clients[clients.length-1].stream = stream;
+//        })
+//        .or(function(err) {
+//            console.log("error" + err);
+//        });
+}
+
+function destroyClient(id) {
+    var clientIndex = clients.map(function(client) { return client.id; }).indexOf(id);
+    if(clients[clientIndex].stream !== null) {
+        clients[clientIndex].stream.destroy();
+    }
 }
