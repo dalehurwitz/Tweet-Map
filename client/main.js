@@ -30,22 +30,24 @@
 			console.log("disconnected");
 		});
 
-		socket.on("newtweet", function(tweet, coords) {
+		socket.on("new-tweet", function(tweet, coords) {
+            console.log("new tweet");
 			addTweetMarkerToMap(tweet, coords);
 		});
         
-        socket.on("client-registered", function(index) {
-            console.log("index: " + index);
+        socket.on("client-registered", function(id) {
+            console.log("id: " + id);
         })
 	}
 
 	/*** Init OpenLayers map ***/
 	function createMap(lat, lng, zoom) {
-		var map = L.map('map').setView([lat, lng], 3);
+		var map = L.map('map', { zoomControl: false }).setView([lat, lng], 3);
 		L.tileLayer('http://api.tiles.mapbox.com/v4/mapbox.outdoors/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoiZGF6ODkiLCJhIjoiNzE4ZDViY2M0NWEwYjIxZWQxOGIwM2U5YzUwYmJkYTEifQ.Tr84K9p5dN8qhQ8Y6KkWoA', {
 			attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
 			maxZoom: 18,
 		}).addTo(map);
+        new L.Control.Zoom({ position: 'topright' }).addTo(map);
 		return map;
 	}
 
