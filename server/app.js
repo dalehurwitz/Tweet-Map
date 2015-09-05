@@ -18,10 +18,8 @@ var GoogleLocations = require('google-locations');
 var locations = new GoogleLocations(config.google.key);
 
 var clients = [];
-var numClientsConnected = 0;
-var curStream = null;
 
-var keywords = "bernie";
+var keywords = "ufc";
 
 /*** socket.io configuration ***/
 io.on("connection", handleIO);
@@ -39,45 +37,52 @@ var twit = new twitter({
 	access_token_secret: config.twitter.as
 });
 
-function startTwitterStream(keywords) {
-	console.log("* start stream");
-	var num = 0;
-	twit.stream('statuses/filter', {
-		track: keywords
-	}, function (stream) {
-		curStream = stream;
-		curStream.on('data', function (tweet) {
-            //console.log("new tweet")
-			if (typeof tweet.user !== "undefined" && tweet) {
-				num++;
-				//getLocationOfTweet(tweet);
-			}
-		});
-	});
-}
-
-function createTwitterStream(keywords) {
+function createTwitterStream(keywords, id) {
     return ASQ(function(done) {
         twit.stream('statuses/filter', { track: keywords }, function(stream) {
             done(stream);
+            stream.on('data', function (tweet) {
+                console.log("new tweet: " + id)
+                if (typeof tweet.user !== "undefined" && tweet) {
+                    //getLocationOfTweet(tweet, id);
+                }
+            });
         });
     });
 }
 
-function destroyTwitterStream() {
-	console.log("* destroy stream");
-	curStream.destroy();
-	curStream = null;
+function setupTwitterStream(id, keywords) {
+    createTwitterStream(keywords, id)
+        .val(function(stream) {
+            var clientIndex = getClientIndexById(id);
+            clients[clientIndex].stream = stream;
+        })
+        .or(function(err) {
+            console.log("error: " + err);
+        });
+}
+
+/*
+ * Destroy a live stream
+ * Accepts either a client id or clients array index
+ */
+function destroyTwitterStream(id) {
+    if(typeof id === "string") {
+        id = getClientIndexById(id);
+    }
+    if(clients[id].stream !== null) {
+        clients[id].stream.destroy();
+    }
 }
 
 /* 
  *  Attempt to retrieve coordinates form a tweet location string
  */
-function getLocationOfTweet(tweet) {
+function getLocationOfTweet(tweet, id) {
 	getGoogleAutocompleteResult(tweet)
 		.then(getResultCoords)
 		.val(function (coords) {
-			io.sockets.emit("newtweet", tweet, coords);
+			io.sockets.socket(id).emit("new-tweet", tweet, coords);
 		})
 		.or(function (err) {
 			console.log("Error: " + err);
@@ -99,7 +104,7 @@ function getGoogleAutocompleteResult(tweet) {
  *  Get the coordinates of the first result in a list of possible addresses
  */
 function getResultCoords(done, result) {
-	if(typeof result.predictions[0] === "undefined" || numClientsConnected === 0) {
+	if(typeof result.predictions[0] === "undefined") {
 		console.log("No results available: " + result.status);
 		done.abort();
 		return;
@@ -132,42 +137,39 @@ function handleHTTP(req, res) {
 }
 
 function handleIO(socket) {
-	numClientsConnected++;
 	console.log("connected");
-	console.log("Num clients: " + numClientsConnected);
     addClient(socket.id);
-	if(curStream === null) {
-		startTwitterStream(keywords);
-	}
+    console.log("Clients connected: " + clients.length);
 	
 	socket.on("disconnect", function () {
-		numClientsConnected--;
 		console.log("disconnected");
-		console.log("Num clients: " + numClientsConnected);
-        destroyClient(socket.id);
-		if(numClientsConnected === 0) {
-			destroyTwitterStream();
-		}
+        removeClient(socket.id);
+        console.log("Clients connected: " + clients.length);
 	});
+    
+    socket.on("update-keywords", function(keywords) {
+        updateKeywords(socket.id, keywords);
+    })
 }
 
 function addClient(id) {
     clients.push({ id: id, stream: null });
     //Send the client it's client ID
-    io.sockets.socket(id).emit("client-registered", clients.length-1);
-    
-//    createTwitterStream(keywords)
-//        .val(function(stream) {
-//            clients[clients.length-1].stream = stream;
-//        })
-//        .or(function(err) {
-//            console.log("error" + err);
-//        });
+    io.sockets.socket(id).emit("client-registered", id);
+    setupTwitterStream(id, keywords);
 }
 
-function destroyClient(id) {
-    var clientIndex = clients.map(function(client) { return client.id; }).indexOf(id);
-    if(clients[clientIndex].stream !== null) {
-        clients[clientIndex].stream.destroy();
-    }
+function removeClient(id) {
+    var indexToRemove = getClientIndexById(id);
+    destroyTwitterStream(indexToRemove);
+    clients.splice(indexToRemove, 1);
+}
+
+function updateKeywords(id, keywords) {
+    destroyTwitterStream(id);
+    setupTwitterStream(id, keywords);
+}
+
+function getClientIndexById(id) {
+    return clients.map(function(client) { return client.id; }).indexOf(id);
 }
