@@ -1,6 +1,6 @@
 var http = require("http");
 var host = "localhost";
-var port = 8989;
+var port = 8007;
 var http_serv = http.createServer(handleHTTP).listen(port, host);
 
 var fs = require("fs");
