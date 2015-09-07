@@ -1,6 +1,6 @@
 var http = require("http");
 var host = "localhost";
-var port = 8007;
+var port = 8989;
 var http_serv = http.createServer(handleHTTP).listen(port, host);
 
 var fs = require("fs");
@@ -9,17 +9,17 @@ var twitter = require("twitter");
 var ASQ = require("asynquence");
 require("asynquence-contrib");
 
-var config = require("./config");
+var config = require("./server/config");
 
 var node_static = require("node-static");
-var static_files = new node_static.Server("../client");
+var static_files = new node_static.Server("./client");
 
 var GoogleLocations = require('google-locations');
 var locations = new GoogleLocations(config.google.key);
 
 var clients = [];
 
-var keywords = "ufc";
+var keywords = "#NASCARthrowback";
 
 /*** socket.io configuration ***/
 io.on("connection", handleIO);
@@ -42,10 +42,9 @@ function createTwitterStream(keywords, id) {
         twit.stream('statuses/filter', { track: keywords }, function(stream) {
             done(stream);
             stream.on('data', function (tweet) {
-                console.log("new tweet: " + id)
                 if (typeof tweet.user !== "undefined" && tweet) {
-                    //getLocationOfTweet(tweet, id);
-                }
+					getLocationOfTweet(tweet, id, tweet.coordinates);
+				}
             });
         });
     });
@@ -78,7 +77,13 @@ function destroyTwitterStream(id) {
 /* 
  *  Attempt to retrieve coordinates form a tweet location string
  */
-function getLocationOfTweet(tweet, id) {
+function getLocationOfTweet(tweet, id, coords) {
+	if(coords !== null) {
+		coords = { lat: coords.coordinates[1], lng: coords.coordinates[0] };
+		io.sockets.socket(id).emit("new-tweet", tweet, coords);
+		return;
+	}
+	
 	getGoogleAutocompleteResult(tweet)
 		.then(getResultCoords)
 		.val(function (coords) {
@@ -116,6 +121,7 @@ function getResultCoords(done, result) {
 	});
 }
 
+/* Setup routing */
 function handleHTTP(req, res) {
 	if (req.method === "GET") {
 		if(req.url === "/") {
@@ -155,7 +161,7 @@ function handleIO(socket) {
 function addClient(id) {
     clients.push({ id: id, stream: null });
     //Send the client it's client ID
-    io.sockets.socket(id).emit("client-registered", id);
+    io.sockets.socket(id).emit("client-registered", id, keywords);
     setupTwitterStream(id, keywords);
 }
 

@@ -1,7 +1,10 @@
 (function() {
 
-	var map,
-		tweetMarker;
+	var socket,
+		map,
+		tweetMarker,
+		body,
+		$ui;
 
 	document.addEventListener("DOMContentLoaded", function(event) { 
 		init();
@@ -15,12 +18,31 @@
 			iconAnchor:   [17, 46], // point of the icon which will correspond to marker's location
 			popupAnchor:  [0, -46] // point from which the popup should open relative to the iconAnchor
 		});
+		
+		body = $("body");
+		
+		$ui = {
+			keywords: body.find("#hud .keywords"),
+			input: body.find("#keywords input"),
+			submit: body.find("#keywords .submit")
+		};
+				
+		$ui.submit.on("click", function() {
+			var newKeywords = $ui.input.val();
+			if(newKeywords !== "") {
+				socket.emit("update-keywords", newKeywords);
+				$ui.input.val("");
+				updateHud(newKeywords);
+			}
+		});
+		
 		initSocketIO();
+		
 	}
 
 	/*** Init socket.io ***/
 	function initSocketIO() {   
-		var socket = io.connect("/");
+		socket = io.connect("/");
 
 		socket.on("connect", function () {
 			console.log("connected");
@@ -35,8 +57,9 @@
 			addTweetMarkerToMap(tweet, coords);
 		});
         
-        socket.on("client-registered", function(id) {
+        socket.on("client-registered", function(id, keywords) {
             console.log("id: " + id);
+			updateHud(keywords);
         })
 	}
 
@@ -64,5 +87,9 @@
 					<div class="tweet-body">' + tweet.text + '</div> \
 					<div class="tweet-location">' + tweet.user.location + '</div> \
 				</div>';
+	}
+	
+	function updateHud(keywords) {
+		$ui.keywords.text(keywords);
 	}
 })();
